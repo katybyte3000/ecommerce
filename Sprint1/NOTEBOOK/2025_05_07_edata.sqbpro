@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="edata.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="1238"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="Totalorders" custom_title="0" dock_id="1" table="4,11:mainTotalorders"/><dock_state state="000000ff00000000fd0000000100000002000007740000038ffc0100000001fb000000160064006f0063006b00420072006f00770073006500310100000000000007740000013b00ffffff000002710000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="Customer" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="79"/><column index="2" value="183"/><column index="3" value="95"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="Location" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="63"/><column index="2" value="111"/><column index="3" value="167"/><column index="4" value="63"/><column index="5" value="77"/><column index="6" value="143"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="Products" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort><column index="1" mode="1"/></sort><column_widths><column index="1" value="127"/><column index="2" value="300"/><column index="3" value="127"/><column index="4" value="95"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="Totalorders" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="119"/><column index="2" value="127"/><column index="3" value="71"/><column index="4" value="56"/><column index="5" value="56"/><column index="6" value="87"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="Transactions" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths><column index="1" value="119"/><column index="2" value="87"/><column index="3" value="87"/><column index="4" value="119"/><column index="5" value="81"/><column index="6" value="63"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="SQL 1*">-- 1.What is the category generating the maximum sales revenue?
+
+-- Are they making a loss in any categories?
+
+--Welche Kategorie generiert den höchsten Umsatz?
+--Wie sieht es mit dem Gewinn in dieser Kategorie aus?
+--Machen sie in irgendeiner Kategorie Verluste?
+
+SELECT category, SUM(sales)
+FROM Products p
+JOIN Totalorders t ON p.product_id  = t.product_id
+GROUP BY category
+ORDER BY sales DESC
+
+LIMIT 1
+--- 1.SUM einer Category erstellen:
+
+SELECT *
+FROM Products p
+JOIN Totalorders t ON p.product_id  = t.product_id
+ORDER BY sales DESC
+
+
+
+-- What about the profit in this category?
+SELECT category, SUM(profit)
+FROM Products p
+JOIN Totalorders t ON p.product_id  = t.product_id
+GROUP BY category
+ORDER BY sales DESC
+
+
+
+
+
+
+--SOLUTION
+--technology	70157.5741
+--furniture	7569.1733
+--office supplies	54788.9957
+
+
+
+
+-- What are 5 states generating the maximum and minimum sales revenue
+
+SELECT state, SUM(sales) AS Total_Sales
+FROM Products p
+JOIN Totalorders t ON p.product_id  = t.product_id
+JOIN Transactions r ON t.order_id  = r.order_id
+JOIN Location l ON l.addressid= r.addressid
+GROUP BY State
+ORDER BY Total_Sales ASC
+LIMIT 5;
+
+
+-- Are they the 3 most profitable products as well?
+SELECT Segment, SUM(sales) AS Total_Sales, product_name
+FROM Products p
+JOIN Totalorders t ON p.product_id  = t.product_id
+JOIN Transactions r ON t.order_id  = r.order_id
+JOIN Location l ON l.addressid= r.addressid
+JOIN Customer c ON c.customer_id = r.customer_id
+GROUP BY Segment
+ORDER BY Total_Sales DESC
+
+
+
+-- 3.What are the 3 products in each product segment with the highest sales?
+WITH RankedSales AS (
+  SELECT 
+    Segment,
+    product_name,
+    SUM(sales) AS Total_Sales,
+    ROW_NUMBER() OVER (PARTITION BY Segment ORDER BY SUM(sales) DESC) AS sales_rank
+  FROM Products p
+  JOIN Totalorders t ON p.product_id = t.product_id
+  JOIN Transactions r ON t.order_id = r.order_id
+  JOIN Location l ON l.addressid = r.addressid
+  JOIN Customer c ON c.customer_id = r.customer_id
+  GROUP BY Segment, product_name
+)
+SELECT Segment, product_name, Total_Sales
+FROM RankedSales
+WHERE sales_rank &lt;= 3
+ORDER BY Segment, sales_rank;
+
+-- 3.What are the 3 products in each product segment with the highest profit?
+
+-- CTE RankedSales ermittelt erstmal einn RANGORDNUNG Nach segment und Artikel
+
+WITH RankedSales AS (
+  SELECT 
+    Segment,
+    product_name,
+    SUM(profit) AS Total_Sales,
+    ROW_NUMBER() OVER (PARTITION BY Segment ORDER BY SUM(profit) DESC) AS sales_rank
+  FROM Products p
+  JOIN Totalorders t ON p.product_id = t.product_id
+  JOIN Transactions r ON t.order_id = r.order_id
+  JOIN Location l ON l.addressid = r.addressid
+  JOIN Customer c ON c.customer_id = r.customer_id
+  GROUP BY Segment, product_name
+)
+SELECT Segment, product_name, Total_Sales
+FROM RankedSales
+WHERE sales_rank &lt;= 1
+ORDER BY Segment, sales_rank;
+
+
+
+-- 4. What are the 3 best-seller products in each product segment? (Quantity-wise)
+
+-- Produkte nach Verkaufsmenge zusammen suchen
+
+
+WITH QSales AS (
+  SELECT 
+    segment,
+    product_name,
+    SUM(profit) AS Total_Sales,
+	SUM(quantity) AS Amount,
+    ROW_NUMBER() OVER (PARTITION BY Segment ORDER BY SUM(quantity) DESC) AS best
+  FROM Products p
+  JOIN Totalorders t ON p.product_id = t.product_id
+  JOIN Transactions r ON t.order_id = r.order_id
+  JOIN Location l ON l.addressid = r.addressid
+  JOIN Customer c ON c.customer_id = r.customer_id
+  GROUP BY Segment, product_name
+)
+SELECT segment, product_name, Total_Sales, Amount
+FROM QSales
+WHERE best&lt;= 3;
+ORDER BY Segment;
+
+
+
+
+SELECT *
+FROM Products p
+  JOIN Totalorders t ON p.product_id = t.product_id
+  JOIN Transactions r ON t.order_id = r.order_id
+  JOIN Location l ON l.addressid = r.addressid
+  JOIN Customer c ON c.customer_id = r.customer_id
+GROUP BY State
+ORDER BY Total_Sales ASC
+LIMIT 5;
+
+
+--5 What are the top 3 worst-selling products in every category? (Quantity-wise)
+
+WITH QSales AS (
+  SELECT 
+    category,
+    product_name,
+    SUM(profit) AS Profit,
+	SUM(quantity) AS Amount,
+    ROW_NUMBER() OVER (PARTITION BY category ORDER BY SUM(quantity) ASC) AS worst
+  FROM Products p
+  JOIN Totalorders t ON p.product_id = t.product_id
+  JOIN Transactions r ON t.order_id = r.order_id
+  JOIN Location l ON l.addressid = r.addressid
+  JOIN Customer c ON c.customer_id = r.customer_id
+  GROUP BY category, product_name
+)
+SELECT category, product_name, Profit, Amount
+FROM QSales
+WHERE worst&lt;= 3;
+ORDER BY Segment,Total_Sales;
+
+
+
+-- CHATGBT Order nach qunatity and Profit
+
+WITH QSales AS (
+  SELECT 
+    category,
+    product_name,
+    SUM(profit) AS Profit,
+    SUM(quantity) AS Amount,
+    ROW_NUMBER() OVER (PARTITION BY category ORDER BY SUM(quantity) ASC) AS worst_by_qty,
+    ROW_NUMBER() OVER (PARTITION BY category ORDER BY SUM(profit) ASC) AS worst_by_profit
+  FROM Products p
+  JOIN Totalorders t ON p.product_id = t.product_id
+  JOIN Transactions r ON t.order_id = r.order_id
+  JOIN Location l ON l.addressid = r.addressid
+  JOIN Customer c ON c.customer_id = r.customer_id
+  GROUP BY category, product_name
+)
+SELECT 
+  category, 
+  product_name, 
+  Amount, 
+  Profit,
+  worst_by_qty,
+  worst_by_profit
+FROM QSales
+WHERE worst_by_qty &lt;= 3 OR worst_by_profit &lt;= 3
+ORDER BY category, worst_by_qty;
+
+
+-- 6 How many unique customers per month are there for the year 2016.
+
+
+
+</sql><current_tab id="0"/></tab_sql></sqlb_project>

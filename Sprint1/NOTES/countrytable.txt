@@ -1,0 +1,19 @@
+
+
+# Verbindung zur bestehenden Datenbank
+conn = sqlite3.connect("edata.db")
+cur = conn.cursor()
+
+# Nur eindeutige, nicht-leere Länder aus dem DataFrame holen
+unique_countries = table['country'].dropna().drop_duplicates()
+
+# In Country-Tabelle einfügen (nur wenn noch nicht vorhanden)
+for country in unique_countries:
+    cur.execute("""
+    INSERT OR IGNORE INTO Country (country_name)
+    VALUES (?);
+    """, (country,))
+
+# Änderungen speichern
+conn.commit()
+conn.close()

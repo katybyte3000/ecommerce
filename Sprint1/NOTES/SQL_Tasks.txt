@@ -1,0 +1,48 @@
+-- What is the category generating the maximum sales revenue?
+-- What about the profit in this category?
+-- Are they making a loss in any categories?
+
+--Welche Kategorie generiert den höchsten Umsatz?
+--Wie sieht es mit dem Gewinn in dieser Kategorie aus?
+--Machen sie in irgendeiner Kategorie Verluste?
+
+SELECT category, SUM(sales)
+FROM Products p
+JOIN Totalorders t ON p.product_id  = t.product_id
+GROUP BY category
+ORDER BY sales DESC
+
+LIMIT 1
+--- 1.SUM einer Category erstellen:
+
+SELECT *
+FROM Products p
+JOIN Totalorders t ON p.product_id  = t.product_id
+ORDER BY sales DESC
+
+SELECT category, SUM(profit)
+FROM Products p
+JOIN Totalorders t ON p.product_id  = t.product_id
+GROUP BY category
+ORDER BY sales DESC
+
+--SOLUTION
+--technology	70157.5741
+--furniture	7569.1733
+--office supplies	54788.9957
+
+
+SELECT State, SUM(Sales) AS Total_Sales
+FROM sales_data
+GROUP BY State
+ORDER BY Total_Sales DESC
+LIMIT 5;
+
+-- What are 5 states generating the maximum and minimum sales revenue
+
+SELECT *
+FROM Products p
+JOIN Totalorders t ON p.product_id  = t.product_id
+JOIN Transactions r ON p.product_id  = t.product_id
+GROUP BY category
+ORDER BY sales DESC
